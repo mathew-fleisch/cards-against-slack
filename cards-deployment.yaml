@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: cards
+  name: cards
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cards
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: cards
+    spec:
+      containers:
+      - image: golang:alpine
+        name: golang
+        command: ["sleep"]
+        args: ["3600"]
+        resources: {}
+        volumeMounts:
+        - name: cas-files
+          mountPath: /tmp/cas
+        - name: cas-src
+          mountPath: /cards
+      volumes:
+        - name: cas-files
+          hostPath: 
+            path: /tmp/cas
+        - name: cas-src
+          hostPath:
+            path: /cards
+status: {}
