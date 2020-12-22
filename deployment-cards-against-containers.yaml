@@ -30,7 +30,7 @@ spec:
         - name: ANSWERS_FILE_URL
           value: https://raw.githubusercontent.com/cardsagainstcontainers/deck/master/answers.txt
         - name: TRIGGERS_FILE_URL
-          value: https://raw.githubusercontent.com/mathew-fleisch/cards-against-slack/main/files/triggers.txt
+          value: https://raw.githubusercontent.com/mathew-fleisch/cards-against-slack/main/files/cards-against-containers-triggers.txt
         - name: SLACK_TOKEN
           valueFrom:
             secretKeyRef:
