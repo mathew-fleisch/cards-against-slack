@@ -187,7 +187,7 @@ func main() {
 			panic(err)
 		}
 	} else {
-		err := DownloadFile(defaultQuestions), "files/questions.txt")
+		err := DownloadFile(defaultQuestions, "files/questions.txt")
 		if err != nil {
 			panic(err)
 		}
@@ -200,7 +200,7 @@ func main() {
 			panic(err)
 		}
 	} else {
-		err := DownloadFile(defaultAnswers), "files/answers.txt")
+		err := DownloadFile(defaultAnswers, "files/answers.txt")
 		if err != nil {
 			panic(err)
 		}
