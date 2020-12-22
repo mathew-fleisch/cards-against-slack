@@ -3,14 +3,17 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"math/rand"
+	"net/http"
 	"os"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/slack-go/slack"
 )
 
@@ -24,6 +27,15 @@ var rtm *slack.RTM
 var channelsByName map[string]string
 var displayUsername = "Cards Against Slack"
 var displayIconURL = "https://static.thenounproject.com/png/30134-200.png"
+var defaultQuestions = "https://raw.githubusercontent.com/nodanaonlyzuul/against-humanity/master/questions.txt"
+var defaultAnswers = "https://raw.githubusercontent.com/nodanaonlyzuul/against-humanity/master/answers.txt"
+
+// WriteCounter counts the number of bytes written to it. By implementing the Write method,
+// it is of the io.Writer interface and we can pass this into io.TeeReader()
+// Every write to this writer, will print the progress of the file write.
+type WriteCounter struct {
+	Total uint64
+}
 
 func makeChannelMap() {
 	log.Println("Building channel map")
@@ -107,6 +119,59 @@ func randomLine(textArr []string) string {
 	return textArr[rand.Intn(len(textArr))]
 }
 
+func (wc *WriteCounter) Write(p []byte) (int, error) {
+	n := len(p)
+	wc.Total += uint64(n)
+	wc.PrintProgress()
+	return n, nil
+}
+
+// PrintProgress prints the progress of a file write
+func (wc WriteCounter) PrintProgress() {
+	// Clear the line by using a character return to go back to the start and remove
+	// the remaining characters by filling it with spaces
+	fmt.Printf("\r%s", strings.Repeat(" ", 50))
+
+	// Return again and print current status of download
+	// We use the humanize package to print the bytes in a meaningful way (e.g. 10 MB)
+	fmt.Printf("\rDownloading... %s complete", humanize.Bytes(wc.Total))
+}
+
+func DownloadFile(url string, filepath string) error {
+	// Create the file with .tmp extension, so that we won't overwrite a
+	// file until it's downloaded fully
+	out, err := os.Create(filepath + ".tmp")
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// Get the data
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Create our bytes counter and pass it to be used alongside our writer
+	counter := &WriteCounter{}
+	_, err = io.Copy(out, io.TeeReader(resp.Body, counter))
+	if err != nil {
+		return err
+	}
+
+	// The progress use the same line so print a new line once it's finished downloading
+	fmt.Println()
+
+	// Rename the tmp file back to the original file
+	err = os.Rename(filepath+".tmp", filepath)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func main() {
 	log.Println("Intializing...")
 
@@ -115,6 +180,29 @@ func main() {
 		log.Fatal("You must provide an access token in SLACK_TOKEN")
 	}
 
+	tmpQuestionsFileURL, ok := os.LookupEnv("QUESTIONS_FILE_URL")
+	if ok {
+		err := DownloadFile(tmpQuestionsFileURL, "files/questions.txt")
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	tmpAnswersFileURL, ok := os.LookupEnv("ANSWERS_FILE_URL")
+	if ok {
+		err := DownloadFile(tmpAnswersFileURL, "files/answers.txt")
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	tmpTriggersFileURL, ok := os.LookupEnv("TRIGGERS_FILE_URL")
+	if ok {
+		err := DownloadFile(tmpTriggersFileURL, "files/triggers.txt")
+		if err != nil {
+			panic(err)
+		}
+	}
 	qptr := flag.String("questions-path", "files/questions.txt", "file path to read questions from")
 	aptr := flag.String("answers-path", "files/answers.txt", "file path to read answers from")
 	tptr := flag.String("triggers-path", "files/triggers.txt", "file path to read triggers from")
