@@ -1,4 +1,3 @@
-cards\ against\ slack
+cards\ *against\ *slack
 cards-against-slack
-cardsagainstslack
 cardz

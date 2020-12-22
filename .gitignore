@@ -13,6 +13,5 @@
 
 .env
 .DS_Store
-go-loud
 build.sh
 .vscode

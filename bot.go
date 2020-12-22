@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	strip "github.com/grokify/html-strip-tags-go"
 	"github.com/slack-go/slack"
 )
 
@@ -23,9 +22,11 @@ var triggers []string
 var api *slack.Client
 var rtm *slack.RTM
 var channelsByName map[string]string
+var displayUsername = "Cards Against Slack"
+var displayIconURL = "https://static.thenounproject.com/png/30134-200.png"
 
 func makeChannelMap() {
-	log.Println("Intializing...")
+	log.Println("Building channel map")
 	channelsByName = make(map[string]string)
 	channels, err := api.GetChannels(true)
 	if err != nil {
@@ -35,7 +36,7 @@ func makeChannelMap() {
 	for _, v := range channels {
 		channelsByName[v.Name] = v.ID
 	}
-	log.Println("Cards Against Slack Initialized! Read to deal...")
+	log.Println("Read to deal!")
 }
 
 func parseUserMessage(event *slack.MessageEvent) bool {
@@ -50,15 +51,18 @@ func parseUserMessage(event *slack.MessageEvent) bool {
 
 func isTriggered(msg string) bool {
 
-	input := strip.StripTags(msg)
-
+	// input := strip.StripTags(msg)
+	input := msg
+	if len(input) == 0 {
+		return false
+	}
 	// log.Printf("Input Before: `%s`", input)
 	// log.Printf("Triggers: `%s`", triggers)
 	for _, s := range triggers {
 		// fmt.Println(i, s)
 		input = regexp.MustCompile("^(?i)"+s+"$").ReplaceAllLiteralString(input, "")
 	}
-	log.Printf("Input After: `%s`", input)
+	// log.Printf("Input After: `%s`", input)
 
 	if len(input) == 0 {
 		return true
@@ -68,9 +72,11 @@ func isTriggered(msg string) bool {
 }
 
 func sendMessage(event *slack.MessageEvent, msg string) {
+	// channelID, _, err := api.PostMessage("GT00LH8E8",
 	channelID, _, err := api.PostMessage(event.Channel,
 		slack.MsgOptionText(msg, false),
-		slack.MsgOptionUsername("Cards Against Slack"),
+		slack.MsgOptionIconURL(displayIconURL),
+		slack.MsgOptionUsername(displayUsername),
 		slack.MsgOptionTS(event.ThreadTimestamp),
 		slack.MsgOptionPostMessageParameters(slack.PostMessageParameters{
 			UnfurlLinks: true,
@@ -102,7 +108,12 @@ func randomLine(textArr []string) string {
 }
 
 func main() {
-	// godotenv.Load(".env")
+	log.Println("Intializing...")
+
+	slacktoken, ok := os.LookupEnv("SLACK_TOKEN")
+	if !ok {
+		log.Fatal("You must provide an access token in SLACK_TOKEN")
+	}
 
 	qptr := flag.String("questions-path", "files/questions.txt", "file path to read questions from")
 	aptr := flag.String("answers-path", "files/answers.txt", "file path to read answers from")
@@ -113,41 +124,38 @@ func main() {
 		fmt.Println("File reading error", err)
 		return
 	}
-	// fmt.Println("Questions File:", *qptr)
+	// Split text files by newline after removing blank lines
 	questions = strings.Split(regexp.MustCompile("\n\n*").ReplaceAllLiteralString(string(questionsFile), "\n"), "\n")
 	// fmt.Println("Questions:", questions)
-
+	log.Println("Questions file loaded: ", *qptr)
 	answersFile, err := ioutil.ReadFile(*aptr)
 	if err != nil {
 		fmt.Println("File reading error", err)
 		return
 	}
-	// fmt.Println("Answers File:", *aptr)
+
 	answers = strings.Split(regexp.MustCompile("\n\n*").ReplaceAllLiteralString(string(answersFile), "\n"), "\n")
 	// fmt.Println("answers:", answers)
+	log.Println("Answers file loaded:   ", *aptr)
 
 	triggersFile, err := ioutil.ReadFile(*tptr)
 	if err != nil {
 		fmt.Println("File reading error", err)
 		return
 	}
-	// fmt.Println("Triggers File:", *tptr)
 	triggers = strings.Split(regexp.MustCompile("\n\n*").ReplaceAllLiteralString(string(triggersFile), "\n"), "\n")
-	// fmt.Println("triggers:", triggers)
-	// triggersSplit := strings.Split(string(triggers), "\n")
+	log.Println("Triggers file loaded:  ", *tptr)
 
-	// fmt.Println("Contents of questions file:", string(questions))
-	// rand.Seed(time.Now().Unix())
-	// fmt.Println("Random Question: ", questions[rand.Intn(len(questions))])
-	// fmt.Println("Contents of answers file:", string(answers))
-	// rand.Seed(time.Now().Unix())
-	// fmt.Println("Random Answer: ", answers[rand.Intn(len(answers))])
-	// fmt.Println("Triggers:", string(triggers))
-
-	slacktoken, ok := os.LookupEnv("SLACK_TOKEN")
-	if !ok {
-		log.Fatal("You must provide an access token in SLACK_TOKEN")
+	tmpDisplayUsername, ok := os.LookupEnv("DISPLAY_USERNAME")
+	if ok {
+		displayUsername = tmpDisplayUsername
 	}
+	log.Println("Display Username:      ", displayUsername)
+	tmpDisplayIconURL, ok := os.LookupEnv("DISPLAY_ICON_URL")
+	if ok {
+		displayIconURL = tmpDisplayIconURL
+	}
+	log.Println("Display Icon URL:      ", displayIconURL)
 
 	// Our special handlers. If they handled a message, they return true.
 	specials = []func(event *slack.MessageEvent) bool{
