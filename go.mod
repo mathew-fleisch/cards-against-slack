@@ -3,6 +3,7 @@ module github.com/mathew-fleisch/cards-against-slack
 go 1.12
 
 require (
+	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/grokify/html-strip-tags-go v0.0.0-20180907063347-e9e44961e26f
 	github.com/joho/godotenv v1.3.0
 	github.com/lusis/go-slackbot v0.0.0-20180109053408-401027ccfef5 // indirect
