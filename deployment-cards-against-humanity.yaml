@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: cards
+  name: cards
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cards
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: cards
+    spec:
+      containers:
+      - image: mathewfleisch/cards-against-slack:v1.0.2
+        name: cards-against-slack
+        env:
+        - name: DISPLAY_USERNAME
+          value: Cards Against Humanity
+        # - name: DISPLAY_ICON_URL
+        #   value: https://static.thenounproject.com/png/30134-200.png
+        # - name: QUESTIONS_FILE_URL
+        #   value: https://raw.githubusercontent.com/cardsagainstcontainers/deck/master/questions.txt
+        # - name: ANSWERS_FILE_URL
+        #   value: https://raw.githubusercontent.com/cardsagainstcontainers/deck/master/answers.txt
+        # - name: TRIGGERS_FILE_URL
+        #   value: https://raw.githubusercontent.com/mathew-fleisch/cards-against-slack/main/files/triggers.txt
+        - name: SLACK_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: token
+              name: slack
