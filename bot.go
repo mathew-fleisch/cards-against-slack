@@ -186,11 +186,21 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+	} else {
+		err := DownloadFile(defaultQuestions), "files/questions.txt")
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	tmpAnswersFileURL, ok := os.LookupEnv("ANSWERS_FILE_URL")
 	if ok {
 		err := DownloadFile(tmpAnswersFileURL, "files/answers.txt")
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		err := DownloadFile(defaultAnswers), "files/answers.txt")
 		if err != nil {
 			panic(err)
 		}
